@@ -11,11 +11,11 @@ import hapiserver
 logging.getLogger('hapiserver').setLevel(logging.DEBUG)
 
 # method = 1, 2, 3, and 4 demonstrate different ways to configure the HAPI server.
-method = 3
+method = 4
 
 # The following is used by a test.
 # Override with the METHOD environment variable, if set.
-method = int(os.environ.get("METHOD", 3))
+method = int(os.environ.get("METHOD", method))
 
 def _read_config(style):
   import json
@@ -23,8 +23,10 @@ def _read_config(style):
 
   path = pathlib.Path(__file__).parent / "src" / f"config-{style}.json"
 
+  print(f"Reading config from {path}")
   with open(path) as file:
     config = json.load(file)
+
   return config
 
 if method == 1:
@@ -64,9 +66,10 @@ if method == 3:
   config_path = str(pathlib.Path(__file__).parent / "src" / "config-scripts.json")
   app = hapiserver.app(config_path)
 
+
 if method == 4:
   # Alternatively, modify ENV["BIN_DIR"] to point to an absolute path.
   import pathlib
-  config = _read_config("functions")
-  config["ENV"]["BIN_DIR"] = str(pathlib.Path(__file__).parent / "bin")
+  config = _read_config("scripts")
+  config["ENV"]["BIN_DIR"] = str(pathlib.Path(__file__).parent / "src")
   app = hapiserver.app(config)
