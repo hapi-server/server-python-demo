@@ -10,7 +10,7 @@ import logging
 import hapiserver
 logging.getLogger('hapiserver').setLevel(logging.DEBUG)
 
-# method = 1, 2, and 3 demonstrate different ways to configure the HAPI server.
+# method = 1, 2, 3, and 4 demonstrate different ways to configure the HAPI server.
 method = 3
 
 # The following is used by a test.
@@ -30,9 +30,9 @@ def _read_config(style):
 if method == 1:
   # Import functions and put function references in config.
 
-  from bin.info import info
-  from bin.data import data
-  from bin.catalog import catalog
+  from src.info import info
+  from src.data import data
+  from src.catalog import catalog
 
   functions = {
     "catalog": catalog,
@@ -56,9 +56,17 @@ if method == 2:
 
 if method == 3:
   # Reference command line scripts for catalog, info, and data.
-  # $BIN_DIR in scripts[{catalog,info,data}] is replaced with the value
-  # of config["ENV"]["BIN_DIR"] and if it is a relative path, it is
-  # resolved relative to current working directory.
+  # Pass the config file path (not a parsed dict) so that relative script
+  # paths are resolved relative to the config file's directory (src/)
+  # instead of the current working directory.
 
-  config = _read_config("scripts")
+  import pathlib
+
+  config_path = str(pathlib.Path(__file__).parent / "src" / "config-scripts.json")
+  app = hapiserver.app(config_path)
+
+if method == 4:
+  # Alternatively, modify ENV["BIN_DIR"] to point to an absolute path.
+  config = _read_config("functions")
+  config["ENV"]["BIN_DIR"] = str(pathlib.Path(__file__).parent / "bin")
   app = hapiserver.app(config)
