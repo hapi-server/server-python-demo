@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hapiserver_demo"
+version = "0.0.1"
+requires-python = ">=3.8"
+dependencies = [
+  "urllib3",
+  "hapiserver @ git+https://github.com/rweigel/server-python-general.git@main",
+  "utilrsw @ git+https://github.com/rweigel/utilrsw"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hapiserver_demo*"]
