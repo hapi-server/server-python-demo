@@ -61,12 +61,12 @@ if method == 3:
   # instead of the current working directory.
 
   import pathlib
-
   config_path = str(pathlib.Path(__file__).parent / "src" / "config-scripts.json")
   app = hapiserver.app(config_path)
 
 if method == 4:
   # Alternatively, modify ENV["BIN_DIR"] to point to an absolute path.
+  import pathlib
   config = _read_config("functions")
   config["ENV"]["BIN_DIR"] = str(pathlib.Path(__file__).parent / "bin")
   app = hapiserver.app(config)
