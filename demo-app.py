@@ -17,11 +17,11 @@ method = 3
 # Override with the METHOD environment variable, if set.
 method = int(os.environ.get("METHOD", 3))
 
-def _read_config():
+def _read_config(style):
   import json
   import pathlib
 
-  path = pathlib.Path(__file__).parent / "bin" / "config.json"
+  path = pathlib.Path(__file__).parent / "src" / f"config-{style}.json"
 
   with open(path) as file:
     config = json.load(file)
@@ -40,7 +40,8 @@ if method == 1:
     "data": data
   }
 
-  config = _read_config()
+  config = _read_config("functions")
+  # Replace function strings with function references.
   config.update({"functions": functions})
   app = hapiserver.app(config)
 
@@ -49,36 +50,15 @@ if method == 2:
   # Reference functions in config as strings. Useful when full configuration
   # is stored in a .json file.
 
-  config = _read_config()
-  config.update({
-    "functions": {
-      "catalog": "bin.catalog.catalog",
-      "info": "bin.info.info",
-      "data": "bin.data.data"
-    }
-  })
-
+  config = _read_config("functions")
   app = hapiserver.app(config)
 
 
 if method == 3:
   # Reference command line scripts for catalog, info, and data.
-  # $BIN_DIR is replaced with the value of config["ENV"]["BIN_DIR"]
-  # and if it is a relative path, it is resolved relative to current working
-  # directory.
-  config = _read_config()
-  # Store variables referenced in config in ENV.
-  config.update({
-    "ENV": {
-      "BIN_DIR": "bin"
-    }
-  })
-  config.update({
-    "scripts": {
-      "catalog": "$BIN_DIR/catalog.py --depth={depth} --config={config}",
-      "info": "$BIN_DIR/info.py --dataset={dataset} --config={config}",
-      "data": "$BIN_DIR/data.py --dataset={dataset} --parameters={parameters} --start={start} --stop={stop} --format={format} --config={config}"
-    }
-  })
+  # $BIN_DIR in scripts[{catalog,info,data}] is replaced with the value
+  # of config["ENV"]["BIN_DIR"] and if it is a relative path, it is
+  # resolved relative to current working directory.
 
+  config = _read_config("scripts")
   app = hapiserver.app(config)

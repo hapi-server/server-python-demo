@@ -1,0 +1,25 @@
+{
+  "path": "/hapi",
+  "ENV": {
+    "BIN_DIR": "."
+  },
+  "scripts": {
+    "catalog": "$BIN_DIR/catalog.py --depth={depth} --config={config}",
+    "info": "$BIN_DIR/info.py --dataset={dataset} --config={config}",
+    "data": "$BIN_DIR/data.py --dataset={dataset} --parameters={parameters} --start={start} --stop={stop} --format={format} --config={config}"
+  },
+  "options": {
+    "DATA_DIR": "data",
+    "CACHE_DIR": "cache",
+    "BIN_DIR": "bin",
+    "LOG_LEVEL": "DEBUG"
+  },
+  "about": {
+    "id": "Demo",
+    "title": "Demo HAPI Server using hapiserver Python package"
+  },
+  "capabilities": {
+    "outputFormats": ["csv"],
+    "catalogDepthOptions": ["dataset", "all"]
+  }
+}

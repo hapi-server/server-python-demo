@@ -1,5 +1,10 @@
 {
   "path": "/hapi",
+  "functions": {
+    "catalog": "src.catalog.catalog",
+    "info": "src.info.info",
+    "data": "src.data.data"
+  },
   "options": {
     "DATA_DIR": "data",
     "CACHE_DIR": "cache",

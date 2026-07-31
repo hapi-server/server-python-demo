@@ -8,8 +8,7 @@ version = "0.0.1"
 requires-python = ">=3.8"
 dependencies = [
   "urllib3",
-  "hapiserver @ git+https://github.com/rweigel/server-python-general.git@main",
-  "utilrsw @ git+https://github.com/rweigel/utilrsw"
+  "hapiserver @ git+https://github.com/rweigel/server-python.git@main"
 ]
 
 [tool.setuptools.packages.find]
