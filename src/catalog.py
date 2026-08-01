@@ -37,7 +37,7 @@ def catalog(depth=None, config=None):
     search application).
     """
     if __package__:
-      from bin.info import info
+      from .info import info
     else:
       from info import info
 
