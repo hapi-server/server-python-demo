@@ -11,6 +11,8 @@ dependencies = [
   "hapiserver @ git+https://github.com/rweigel/server-python.git@main"
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["hapiserver_demo*"]
+[tool.setuptools]
+packages = ["hapiserver_demo"]
+
+[tool.setuptools.package-dir]
+hapiserver_demo = "src"
