@@ -9,7 +9,18 @@ To adapt to different data, modify the four files
 3. `info.py` which returns `/info` metadata
 4. `data.py` which returns the `/data` response
 
-# Standalone server
+Unit tests for the demo server in [test/](test/) can also be adapted.
+
+# Install
+
+```bash
+git clone https://github.com/hapi-server/server-python-demo
+cd server-python-demo
+python -m pip install -e .
+python test/test_server.py
+```
+
+# Run standalone server
 
 For a standalone server, start using
 
