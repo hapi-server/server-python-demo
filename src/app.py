@@ -1,6 +1,10 @@
-"""This script can be used to integrate a HAPI server into an existing ASGI
+"""
+This script can be used to integrate a HAPI server into an existing ASGI
 (1.) or WSGI application (2.). It is not intended to be run directly,
 but can be (3.).
+
+If you want to run the HAPI server standalone, ignore this file and use
+the instructions for a standalone server in README.md.
 
 1. Integrating into an existing ASGI application (e.g. FastAPI or Starlette):
 

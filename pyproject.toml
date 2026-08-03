@@ -11,8 +11,19 @@ dependencies = [
   "hapiserver @ git+https://github.com/rweigel/server-python.git@main"
 ]
 
+[project.optional-dependencies]
+test = [
+  "a2wsgi",
+  "flask",
+  "httpx2",
+  "pytest"
+]
+
 [tool.setuptools]
 packages = ["hapiserver_demo"]
 
 [tool.setuptools.package-dir]
 hapiserver_demo = "src"
+
+[tool.setuptools.package-data]
+hapiserver_demo = ["*.json"]
