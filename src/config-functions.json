@@ -1,9 +1,9 @@
 {
   "path": "/hapi",
   "functions": {
-    "catalog": "src.catalog.catalog",
-    "info": "src.info.info",
-    "data": "src.data.data"
+    "catalog": "hapiserver_demo.catalog.catalog",
+    "info": "hapiserver_demo.info.info",
+    "data": "hapiserver_demo.data.data"
   },
   "options": {
     "DATA_DIR": "data",

@@ -72,7 +72,7 @@ import hapiserver
 logging.getLogger('hapiserver').setLevel(logging.DEBUG)
 
 # method = 1, 2, 3, and 4 demonstrate different ways to configure the HAPI server.
-method = 4
+method = 2
 
 # The following is used by a test.
 # Override with the METHOD environment variable, if set.
