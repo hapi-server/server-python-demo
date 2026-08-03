@@ -17,11 +17,11 @@ def data(dataset, parameters, start, stop, format=None, config=None):
 
   Args:
       dataset (_type_): A dataset ID string from the catalog.
-      parameters (_type_): A comma-separated list of parameters to return. If empty, return all parameters.
-      start (str): Start time in ISO 8601 format with microsecond precision.
-      stop (str): Stop time in ISO 8601 format with microsecond precision.
-      format (str, optional): Output format. Currently only 'csv' is supported. Defaults to None.
-      config (dict, optional): Configuration dictionary. Defaults to None.
+      parameters (_type_): A comma-separated list of parameters to return. If '', return all parameters.
+      start (str): Start time in ISO 8601 format with microsecond precision in format '%Y-%m-%dT%H:%M:%S.%fZ'.
+      stop (str): Stop time in ISO 8601 format with microsecond precision in format '%Y-%m-%dT%H:%M:%S.%fZ'.
+      format (str, optional): Output format. Currently only 'csv' is supported.
+      config (dict, optional): Configuration dictionary.
 
   Yields:
       If format='csv' or None, yields a CSV string of data.
