@@ -22,8 +22,5 @@ test = [
 [tool.setuptools]
 packages = ["hapiserver_demo"]
 
-[tool.setuptools.package-dir]
-hapiserver_demo = "src"
-
 [tool.setuptools.package-data]
 hapiserver_demo = ["*.json"]

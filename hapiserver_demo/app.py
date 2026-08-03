@@ -58,9 +58,9 @@ the instructions for a standalone server in README.md.
 3. Start server using (from the repo root, for local development/testing;
    does not require the package to be installed)
     Recommended:
-      uvicorn src.app:app --host 0.0.0.0 --port 8001 --workers 4
+      uvicorn hapiserver_demo.app:app --host 0.0.0.0 --port 8001 --workers 4
     Alternative:
-      gunicorn src.app:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8001 --workers 4
+      gunicorn hapiserver_demo.app:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8001 --workers 4
 
 
 """
@@ -78,11 +78,11 @@ method = 2
 # Override with the METHOD environment variable, if set.
 method = int(os.environ.get("METHOD", method))
 
-def _read_config(style):
+def _read_config(filename):
   import json
   import pathlib
 
-  path = pathlib.Path(__file__).parent / f"config-{style}.json"
+  path = pathlib.Path(__file__).parent / filename
 
   print(f"Reading config from {path}")
   with open(path) as file:
@@ -103,7 +103,7 @@ if method == 1:
     "data": data
   }
 
-  config = _read_config("functions")
+  config = _read_config("config.json")
   # Replace function strings with function references.
   config.update({"functions": functions})
   app = hapiserver.app(config)
@@ -113,14 +113,14 @@ if method == 2:
   # Reference functions in config as strings. Useful when full configuration
   # is stored in a .json file.
 
-  config = _read_config("functions")
+  config = _read_config("config.json")
   app = hapiserver.app(config)
 
 
 if method == 3:
   # Reference command line scripts for catalog, info, and data.
   # Pass the config file path (not a parsed dict) so that relative script
-  # paths are resolved relative to the config file's directory (src/)
+  # paths are resolved relative to the config file's directory
   # instead of the current working directory.
 
   import pathlib
@@ -131,6 +131,6 @@ if method == 3:
 if method == 4:
   # Alternatively, modify ENV["BIN_DIR"] to point to an absolute path.
   import pathlib
-  config = _read_config("scripts")
+  config = _read_config("config-scripts.json")
   config["ENV"]["BIN_DIR"] = str(pathlib.Path(__file__).parent)
   app = hapiserver.app(config)
