@@ -7,8 +7,7 @@ name = "hapiserver_demo"
 version = "0.0.1"
 requires-python = ">=3.8"
 dependencies = [
-  "urllib3",
-  "hapiserver @ git+https://github.com/hapi-server/server-python.git@main"
+  "hapiserver @ git+https://github.com/hapi-server/server-python.git"
 ]
 
 [project.optional-dependencies]

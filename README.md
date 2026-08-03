@@ -17,6 +17,12 @@ Unit tests for the demo server in [test/](test/) can also be adapted.
 git clone https://github.com/hapi-server/server-python-demo
 cd server-python-demo
 python -m pip install -e .
+```
+
+# Testing
+
+```bash
+python -m pip install -e '.[test]'
 python test/test_server.py
 ```
 
