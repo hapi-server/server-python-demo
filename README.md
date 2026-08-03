@@ -19,13 +19,6 @@ cd server-python-demo
 python -m pip install -e .
 ```
 
-# Testing
-
-```bash
-python -m pip install -e '.[test]'
-python test/test_server.py
-```
-
 # Run standalone server
 
 For a standalone server, start using
@@ -45,3 +38,11 @@ and see the comments in [hapiserver_demo/*.py](hapiserver_demo/) for adapting th
 To integrate the HAPI application (HAPI endpoints) into an existing ASGI application, see [app.py](hapiserver_demo/app.py).
 
 To integrate HAPI endpoints into an existing WSGI application (built using frameworks such as Flask, Bottle, and Django), see [server-general-psws](https://github.com/hapi-server/server-general-psws), which adds HAPI endpoints to a Django application by converting the HAPI ASGI app to WSGI and combining it with the Django WSGI application.
+
+# Testing
+
+```bash
+conda create -n hapiserver-python-3.12-demo python=python3.12 pip
+python -m pip install -e '.[test]'
+python test/test_server.py
+```
