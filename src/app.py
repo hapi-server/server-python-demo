@@ -22,6 +22,34 @@ but can be (3.).
   Then run your existing application as usual, e.g.:
     uvicorn main:main_app --host 0.0.0.0 --port 8001
 
+2. Integrating into an existing WSGI application (e.g. Flask):
+
+  Since `hapiserver.app(config)` returns an ASGI application, it needs to be
+  wrapped to work with WSGI frameworks like Flask. Use the `a2wsgi` package
+  to convert the ASGI app to WSGI:
+
+    from hapiserver_demo.app import app as hapi_app
+    from flask import Flask
+    from a2wsgi import ASGIMiddleware
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+
+    main_app = Flask(__name__)  # your existing WSGI application
+
+    @main_app.route('/')
+    def index():
+        return 'Main Flask app running'
+
+    # Wrap ASGI app as WSGI and mount under /hapi
+    main_app.wsgi_app = DispatcherMiddleware(main_app.wsgi_app, {
+        '/hapi': ASGIMiddleware(hapi_app)
+    })
+
+  Then run your Flask application as usual, e.g.:
+    flask --app main run --host 0.0.0.0 --port 8001
+
+  Note: This requires `a2wsgi` and `werkzeug` to be installed:
+    pip install a2wsgi werkzeug
+
 
 3. Start server using (from the repo root, for local development/testing;
    does not require the package to be installed)

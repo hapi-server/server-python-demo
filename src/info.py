@@ -12,7 +12,7 @@ def info(dataset, config=None):
   datasets = {
     "demo1": {
       "startDate": "1970-01-01Z",
-      "stopDate": "1970-01-01T00:00:02Z",
+      "stopDate": "1970-00-01T00:00:00Z",
       "sampleStartDate": "1970-01-01Z",
       "sampleStopDate": "1970-01-01T00:00:02Z",
       "cadence": "PT1S",
