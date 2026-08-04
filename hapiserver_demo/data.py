@@ -1,7 +1,7 @@
 """
 This is a demo data source for a HAPI server. This example was written so that
 modifying it for file-based datasets is straightforward. The primary changes
-needed are to the _file_list(), _read(), _subset(), and _reformat() functions.
+needed are to the _file_list() and _read() functions.
 
 Usage and examples:
   python data.py --help
@@ -13,25 +13,27 @@ logger = logging.getLogger(__name__)
 
 
 def data(dataset, parameters, start, stop, format=None, config=None):
-  """Generate data files for the given dataset and parameters.
+  """Generate data for the given dataset and parameters from start (inclusive) to stop (exclusive).
 
   Args:
-      dataset (_type_): A dataset ID string from the catalog.
-      parameters (_type_): A comma-separated list of parameters to return. If '', return all parameters.
-      start (str): Start time in ISO 8601 format with microsecond precision in format '%Y-%m-%dT%H:%M:%S.%fZ'.
-      stop (str): Stop time in ISO 8601 format with microsecond precision in format '%Y-%m-%dT%H:%M:%S.%fZ'.
-      format (str, optional): Output format. Currently only 'csv' is supported.
-      config (dict, optional): Configuration dictionary.
+    dataset (str): A dataset ID string from the catalog.
+    parameters (str): A comma-separated list of parameters to return. If '', return all parameters.
+    start (str): Start time in ISO 8601 format with microsecond precision in format '%Y-%m-%dT%H:%M:%S.%fZ'.
+    stop (str): Stop time in ISO 8601 format with microsecond precision in format '%Y-%m-%dT%H:%M:%S.%fZ'.
+    format (str, optional): Output format. Currently only 'csv' is supported.
+    config (dict, optional): Configuration dictionary.
 
   Yields:
-      If format='csv' or None, yields a CSV string of data.
+    If format='csv' or None, yields a CSV string of data.
 
   Notes:
   * Start and stop passed are always to microsecond precision with format
     '%Y-%m-%dT%H:%M:%S.%fZ' by hapiserver.
-  * When called from hapiserver, the arguments are validated before calling data().
+  * When called from hapiserver, the arguments to data() are validated.
   * Do not change the function signature of data().
   """
+
+  import json
 
   # Options for {catalog,info,data}.py are stored in config["options"]
   options = (config or {}).get("options", {})
@@ -39,52 +41,50 @@ def data(dataset, parameters, start, stop, format=None, config=None):
   msg = f"parameters={parameters}, start={start}, stop={stop}, format={format}"
   logger.debug(f"data() called with dataset={dataset}, {msg}")
 
-  # In production use, this can be omitted because hapiserver validates the
-  # arguments before calling data().
+
+  # In production use, _check_args() call may be omitted because hapiserver
+  # validates the arguments before calling data() (either the function or via
+  # the command line).
   _check_args(dataset, parameters, start, stop, format=format, config=config)
 
-  # Get list of files that contain data for the given dataset and time range.
-  files = _file_list(dataset, parameters=parameters, start=start, stop=stop, config=config)
 
-  if len(files) == 0:
+  # Get info for files that contain data for the given dataset and time range.
+  file_list = _file_list(dataset, parameters, start, stop, config=config)
+  """
+  file_list has the form
+  [
+    {'file_name': 'filename1', 'start_data': iso8601, 'stop_data': iso8601},
+    {'file_name': 'filename2', 'start_data': iso8601, 'stop_data': iso8601},
+    ...
+  ]
+  where start_data and stop_data are timestamps of the first and last records
+  in the file in ISO 8601 format with microsecond precision ('%Y-%m-%dT%H:%M:%S.%fZ').
+  stop_data is exclusive.
+  """
+  logger.debug(f"file_list = \n{json.dumps(file_list, indent=2)}")
+
+  if len(file_list) == 0:
     logger.debug("No files to read")
     yield ""
     return
 
-  for file in files:
-    data = _read(file, parameters=parameters, start=start, stop=stop, config=config)
+  # Compute the first and last records to read in each file. If max_seconds is
+  # set, limit the number of seconds for each read to max_seconds.
+  max_seconds = options.get("MAX_SECONDS", None)
+  read_list = _read_list(file_list, start, stop, max_seconds=max_seconds)
+  logger.debug(f"read_list = \n{json.dumps(read_list, indent=2)}")
+
+  for read_info in read_list:
+    args = [read_info['file_name'], dataset, parameters, read_info['start_read'], read_info['stop_read']]
+    data = _read(*args, config=config)
     yield _reformat(data, format=format)
 
 
-def _subset(data, parameters, start, stop):
+def _read(file_name, dataset, parameters, start, stop, config=None):
   """
-  Subset the data to the requested parameters, start, and stop times.
-  """
-
-  if not parameters:
-    columns = ['scalar']
-  else:
-    columns = [p for p in parameters.split(',') if p != 'Time']
-
-  data = data[(data.index >= start) & (data.index < stop)][columns]
-
-  # index is a string of the form '%Y-%m-%dT%H:%M:%S.%fZ'; truncate to
-  # '%Y-%m-%dT%H:%M:%SZ' without parsing it back into a datetime.
-  data.index = data.index.str.slice(0, 19) + 'Z'
-  data.index.name = 'Time'
-
-  return data
-
-
-def _reformat(data, format=None):
-  return data.to_csv(index=True, header=False)
-
-
-def _read(file_name, parameters=None, start=None, stop=None, config=None):
-  """
-  Simulate a data source that provides data in chunks of 1 minute.
-  _read_file() always returns data in one-minute chunks that start on the
-  0th minute of each hour.
+  Simulate a data source that provides a data frame from files with 1 minute of
+  data per file for a given dataset and parameters and from start to stop (with
+  stop exclusive).
 
   Performance notes for file readers:
   * If the files are slow to read and disk space is available, cache .npy or .pkl
@@ -94,82 +94,127 @@ def _read(file_name, parameters=None, start=None, stop=None, config=None):
   import os
   import pandas
 
-  use_cache = False
-  write_cache = False
-  cache_file = file_name.replace(".txt", ".pkl")
-
-  cache_dir = (config or {}).get('options', {}).get('CACHE_DIR') or 'cache'
-  cache_file = os.path.join(cache_dir, os.path.basename(cache_file))
-
-  if use_cache and os.path.exists(cache_file):
-    logger.debug(f"Reading {file_name} from cache")
-    # Placeholder for reading from cache file, e.g.,
-    # data = read_cache(cache_file)
-    # return _subset_file(data, parameters, start, stop)
-    pass
-
-  logger.debug(f"Reading {file_name}")
-
   file_name = os.path.abspath(file_name)
-  file_start, file_stop = os.path.basename(file_name).replace(".txt", "").split('_')
-  file_start = pandas.Timestamp(file_start)
-  file_stop = pandas.Timestamp(file_stop)
+  start_read = pandas.Timestamp(start)
+  stop_read = pandas.Timestamp(stop)
 
-  # Create a DataFrame with time from start to stop with 1 second cadence
+  msg = f"Reading {file_name} from {start_read} to {stop_read}"
+  logger.debug(msg)
+
+  # Create a DataFrame with time from start_read to stop_read with 1 second cadence
   # and a scalar value that is the number of seconds since 1970-01-01T00:00:00Z
-
-  time_index = pandas.date_range(start=file_start, end=file_stop, freq='1s', inclusive='left')
-  time = time_index.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+  time_index = pandas.date_range(start=start_read, end=stop_read, freq='1s', inclusive='left')
+  time_str = time_index.strftime('%Y-%m-%dT%H:%M:%SZ')
   unix_0 = pandas.Timestamp('1970-01-01T00:00:00Z')
   scalar = (time_index - unix_0) // pandas.Timedelta('1s')
+
+  # Convert to int32 because pandas writes integers as int64 and JSON does not
+  # support int64.
   scalar = scalar.astype('int32')
 
-  data = pandas.DataFrame({'scalar': scalar}, index=pandas.Index(time, name='Time'))
+  index = pandas.Index(time_str, name='Time')
+  data = pandas.DataFrame({'scalar': scalar}, index=index)
 
-  if write_cache:
-    cache_file = file_name.replace(".txt", ".pkl")
-    # Write file.npy to disk
-    data.to_pickle(cache_file)
-
-  return _subset(data, parameters, start, stop)
+  return data
 
 
-def _file_list(dataset, parameters=None, start=None, stop=None, config=None):
+def _file_list(dataset, parameters, start, stop, config=None):
   """
-  Return a list of files that contain data for the given dataset and time range.
+  Return a list of the form
+  [
+    {'file_name': 'filename1', 'start_data': iso8601, 'stop_data': iso8601},
+    {'file_name': 'filename2', 'start_data': iso8601, 'stop_data': iso8601},
+    ...
+  ]
+  where start_data and stop_data are timestamps of the first and last records
+  in the file in ISO 8601 format with microsecond precision ('%Y-%m-%dT%H:%M:%S.%fZ').
+  stop_data is exclusive.
   """
 
   """
-  Here we simulate a data source that provides data in chunks of 1 minute with
-  file names in the format 'start_stop.txt' where start and stop have the form
-  %Y-%m-%dT%H:%MZ.
+  Here we simulate a data source that provides data with files containing 1
+  minute of data and file names in the format 'start_stop.txt' where start and
+  stop have the form %Y-%m-%dT%H:%MZ.
   """
+
   import os
   import datetime
 
   def dt2str(dt):
-    return dt.strftime(tfmt_red)
+    return dt.strftime('%Y-%m-%dT%H:%MZ')
 
-  tfmt_red = '%Y-%m-%dT%H:%MZ'
   tfmt_full = '%Y-%m-%dT%H:%M:%S.%fZ'
 
   # Not used here, but could be.
   data_dir = (config or {}).get('options', {}).get('DATA_DIR') or 'data'
   logger.debug(f"data_dir = {data_dir}")
 
-  files = []
+  file_list = []
   # Round down to the nearest minute
   file_start = datetime.datetime.strptime(start, tfmt_full).replace(second=0, microsecond=0)
   while file_start < datetime.datetime.strptime(stop, tfmt_full):
     file_stop = file_start + datetime.timedelta(minutes=1)
     file_name = os.path.join(data_dir, f"{dt2str(file_start)}_{dt2str(file_stop)}.txt")
-    files.append(file_name)
+
+    file_list.append({
+      'file_name': file_name,
+      'start_data': datetime.datetime.strftime(file_start, tfmt_full),
+      'stop_data': datetime.datetime.strftime(file_stop, tfmt_full)
+    })
     file_start = file_stop
 
-  n = len(files)
-  logger.debug(f"Files to read ({n}): {files}")
+  n = len(file_list)
+  logger.debug(f"Files to read ({n}): {[f['file_name'] for f in file_list]}")
 
-  return files
+  return file_list
+
+
+def _read_list(file_list, start, stop, max_seconds=None):
+  """
+  read_list has the form
+  [
+    {'file_name': 'filename1', 'start_read': iso8601, 'stop_read': iso8601, 'start_data': iso8601, 'stop_data': iso8601},
+    {'file_name': 'filename1', 'start_read': iso8601, 'stop_read': iso8601, 'start_data': iso8601, 'stop_data': iso8601},
+    ...
+    {'file_name': 'filename2', 'start_read': iso8601, 'stop_read': iso8601, 'start_data': iso8601, 'stop_data': iso8601},
+    {'file_name': 'filename2', 'start_read': iso8601, 'stop_read': iso8601, 'start_data': iso8601, 'stop_data': iso8601},
+    ...
+  ]
+  where first and last are are timestamps of the first and last records to read
+  in the file in ISO 8601 format with microsecond precision ('%Y-%m-%dT%H:%M:%S.%fZ').
+  stop_data and stop_read are exclusive.
+  """
+
+  import datetime
+
+  tfmt_full = '%Y-%m-%dT%H:%M:%S.%fZ'
+  max_delta = None
+  if max_seconds is not None:
+    max_delta = datetime.timedelta(seconds=max_seconds)
+    if max_delta <= datetime.timedelta(0):
+      raise ValueError("max_seconds must be positive")
+
+  read_list = []
+  for file_info in file_list:
+    start_read = datetime.datetime.strptime(max(file_info['start_data'], start), tfmt_full)
+    stop_read = datetime.datetime.strptime(min(file_info['stop_data'], stop), tfmt_full)
+
+    while start_read < stop_read:
+      stop_i = stop_read if max_delta is None else min(start_read + max_delta, stop_read)
+      read_list.append({
+        'file_name': file_info['file_name'],
+        'start_read': datetime.datetime.strftime(start_read, tfmt_full),
+        'stop_read': datetime.datetime.strftime(stop_i, tfmt_full),
+        'start_data': file_info['start_data'],
+        'stop_data': file_info['stop_data']
+      })
+      start_read = stop_i
+
+  return read_list
+
+
+def _reformat(data, format=None):
+  return data.to_csv(index=True, header=False)
 
 
 def _check_args(dataset, parameters, start, stop, format=None, config=None):

@@ -9,6 +9,7 @@
     "DATA_DIR": "data",
     "CACHE_DIR": "cache",
     "BIN_DIR": "bin",
+    "MAX_SECONDS": 30,
     "LOG_LEVEL": "DEBUG"
   },
   "about": {
