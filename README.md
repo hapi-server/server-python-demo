@@ -2,7 +2,7 @@
 
 Demo for [`hapiserver`](https://github.com/hapi-server/server-python)
 
-To adapt to different data, modify the four files
+To adapt to different data, modify the four files in `hapiserver_demo`:
 
 1. `config.json` or `config-scripts.json`
 2. `catalog.py`, which returns `/catalog` metadata
@@ -10,6 +10,8 @@ To adapt to different data, modify the four files
 4. `data.py` which returns the `/data` response
 
 Unit tests for the demo server in [test/](test/) can also be adapted.
+
+To change the name of the package, perform a global replacement of `hapiserver_demo`.
 
 # Install
 
